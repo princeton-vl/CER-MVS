@@ -1,0 +1,6 @@
+RAFT.test_mode = 1
+
+output_folder = "results"
+inference.output_folder = %output_folder
+fusion.output_folder = %output_folder
+multires.output_folder = %output_folder

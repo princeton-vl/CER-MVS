@@ -1,0 +1,4 @@
+train.datasetname = "Blended"
+train.batch_size = 2
+train.num_steps = 135232
+random_scale_and_crop.crop_size = [1376, 1824]

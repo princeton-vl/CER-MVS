@@ -1,0 +1,10 @@
+submitter.log_dir = "logs"
+submitter.account = "YOUR_ACCOUNT"
+submitter.mail_user = "YOUR_EMAIL (if you want to receive notification)"
+submitter.mail_type = "FAIL"
+submitter.nodes = 1
+submitter.ntasks = 1
+submitter.cpus_per_task = 4
+submitter.mem_mb = 16
+submitter.time = "00-01:00:00"
+submitter.gres = "gpu:rtx_3090:1"

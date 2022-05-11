@@ -1,0 +1,4 @@
+train.datasetname = "DTU"
+train.batch_size = 2
+train.num_steps = 216090
+random_scale_and_crop.crop_size = [1056, 1440]
