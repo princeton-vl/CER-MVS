@@ -2,7 +2,7 @@
 
 This repository contains the source code for our paper:
 
-[Multiview Stereo with Cascaded Epipolar RAFT (CER-MVS)](https://arxiv.org/abs/2205.04502)
+[Multiview Stereo with Cascaded Epipolar RAFT](https://arxiv.org/abs/2205.04502)
 
 Zeyu Ma, Zachary Teed and Jia Deng
 
