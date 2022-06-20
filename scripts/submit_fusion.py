@@ -32,8 +32,8 @@ if __name__ == '__main__':
     # DTU jobs both val/test set
     sets = val_set + test_set
     for scan in sets:
-        command = f'''python multires.py -g inference_DTU -p 'multires.scan = "{scan}"'
-python fusion.py -g inference_DTU -p 'fusion.scan = "{scan}"'
+        command = f'''python multires.py -g inference_DTU -p 'multires.scan = "scan{scan}"'
+python fusion.py -g inference_DTU -p 'fusion.scan = "scan{scan}"'
 '''
         executor.name = f"{scan}_fusion"
         executor.submit(command)
