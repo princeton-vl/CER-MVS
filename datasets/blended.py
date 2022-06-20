@@ -47,7 +47,10 @@ class Blended(Dataset):
             index = (index + 1) % len(self.dataset_index)
             scene_id, ix1 = self.dataset_index[index]
             ref_id = self.pair_list[scene_id]['id_list'][ix1]
-
+            for subset in subsets:
+                if scene_id in os.listdir(f"{self.dataset_path}/{subset}"):
+                    break
+        
         neighbors = [int(x) for x in self.pair_list[scene_id][ref_id]['pair'][:self.num_frames-1]]
         indices = [ int(ref_id) ] + neighbors
         images, depths, poses, intrinsics = [], [], [], []

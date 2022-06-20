@@ -35,9 +35,7 @@ class RAFT(nn.Module):
         test_mode = self.test_mode
         intrinsics = intrinsics.clone()
         factor = 8 if self.encoder_type == "LR" else 4
-        intrinsics[:, :, :2, 2] +=  0.5
         intrinsics[:, :, :2] /=  factor
-        intrinsics[:, :, :2, 2] -=  0.5
         images *= 2 / 255. 
         images -= 1
         batch, num, ch, ht, wd = images.shape
