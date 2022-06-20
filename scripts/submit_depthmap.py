@@ -34,7 +34,7 @@ if __name__ == '__main__':
     for scale, nf in [(1, 10), (2, 10)]:
         for scan in sets:
             command = f'''python inference.py -g inference_DTU -p \\
-'inference.scan = scan"{scan}"' \\
+'inference.scan = "scan{scan}"' \\
 'inference.num_frame = {nf}' \\
 'inference.rescale = {scale}'
 '''
