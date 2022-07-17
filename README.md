@@ -1,16 +1,22 @@
 # Multiview Stereo with Cascaded Epipolar RAFT (CER-MVS)
 
-This repository contains the source code for our paper:
+This repository contains the source code for our **ECCV 2022** paper:
 
-[Multiview Stereo with Cascaded Epipolar RAFT](https://arxiv.org/abs/2205.04502)
+**Multiview Stereo with Cascaded Epipolar RAFT**
 
 Zeyu Ma, Zachary Teed and Jia Deng
 
-<!-- ```
-@article{
+[arxiv version](https://arxiv.org/abs/2205.04502)
 
+```
+@inproceedings{ma2022multiview,
+  title={Multiview Stereo with Cascaded Epipolar RAFT},
+  author={Ma, Zeyu and Teed, Zachary and Deng, Jia},
+  booktitle={Proceedings of the European conference on computer vision (ECCV)},
+  year={2022}
 }
-``` -->
+```
+
 ![](CER-MVS.png)
 
 
