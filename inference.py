@@ -46,7 +46,8 @@ def inference(
         if list(tmp.keys())[0][:7] == "module.":
             model = nn.DataParallel(model)
         model.load_state_dict(tmp, strict=True)
-        
+    model.eval()
+    
     gpuargs = {'num_workers': 4, 'drop_last' : False, 'shuffle': False, 'pin_memory': True}
 
     test_dataset = dataset_dict[datasetname](

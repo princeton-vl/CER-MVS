@@ -55,7 +55,7 @@ def train(name='test',
     ):
 
     model = RAFT().cuda()
-    model.eval()
+    model.train()
     # print(count_parameters(model))
 
     optimizer, scheduler = fetch_optimizer(model, num_steps=num_steps)
