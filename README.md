@@ -2,11 +2,10 @@
 
 This repository contains the source code for our **ECCV 2022** paper:
 
-**Multiview Stereo with Cascaded Epipolar RAFT**
+[**Multiview Stereo with Cascaded Epipolar RAFT**](https://www.ecva.net/papers/eccv_2022/papers_ECCV/papers/136910718.pdf)
 
 Zeyu Ma, Zachary Teed and Jia Deng
 
-[arxiv version](https://arxiv.org/abs/2205.04502)
 
 ```
 @inproceedings{ma2022multiview,
