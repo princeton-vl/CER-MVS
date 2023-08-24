@@ -19,7 +19,7 @@ class RAFT(nn.Module):
             dim_fmap=64,
             dim_net=64,
             dim_inp=64,
-            test_mode=False
+            test_mode=False,
         ):
         super(RAFT, self).__init__()
         store_attr()
@@ -31,7 +31,8 @@ class RAFT(nn.Module):
         self.update_block = UpdateBlock(cascade=cascade, dim_net=dim_net, dim_inp=dim_inp)
 
     @gin.configurable()
-    def forward(self, images, poses, intrinsics, do_report=False):
+    def forward(self, images, poses, intrinsics, do_report=False, scale=1):
+        poses[..., :3, 3] *= scale
         test_mode = self.test_mode
         intrinsics = intrinsics.clone()
         factor = 8 if self.encoder_type == "LR" else 4
@@ -102,5 +103,5 @@ class RAFT(nn.Module):
                     if not test_mode: predictions.append(disp)
 
                 stage += 1
-        if test_mode: return None, disp
+        if test_mode: return disp * scale.cuda()
         return predictions

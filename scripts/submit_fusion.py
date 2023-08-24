@@ -1,7 +1,8 @@
-from submitter import submitter
-import gin
 import argparse
 import os
+
+import gin
+from submitter import submitter
 
 # DTU
 val_set = [3, 5, 17, 21, 28, 35, 37, 38, 40, 43, 56, 59, 66, 67, 82, 86, 106, 117]
@@ -12,7 +13,7 @@ training_set = ['Barn', 'Truck', 'Caterpillar', "Ignatius", 'Meetingroom', 'Chur
 intermediate_set = ['Family','Francis','Horse','Lighthouse','M60','Panther','Playground','Train']
 advanced_set = ["Auditorium", "Ballroom", "Courtroom", "Museum", "Palace", "Temple"]
 
-
+output_folder = "results"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     # DTU jobs both val/test set
     sets = val_set + test_set
     for scan in sets:
-        command = f'''python multires.py -g inference_DTU -p 'multires.scan = "scan{scan}"'
-python fusion.py -g inference_DTU -p 'fusion.scan = "scan{scan}"'
+        command = f'''python multires.py -g inference_DTU -p 'get_data_loader.scan = "{scan}"' 'multires.output_folder = "{output_folder}/scan{scan}"'
+python fusion.py -g inference_DTU -p 'get_data_loader.scan = "{scan}"' 'fusion.output_folder = "{output_folder}/scan{scan}"'
 '''
         executor.name = f"{scan}_fusion"
         executor.submit(command)
@@ -43,8 +44,8 @@ python fusion.py -g inference_DTU -p 'fusion.scan = "scan{scan}"'
     # Tanks and Temples jobs all sets
     sets = training_set + intermediate_set + advanced_set
     for scan in sets:
-        command = f'''python multires.py -g inference_TNT -p 'multires.scan = "{scan}"'
-python fusion.py -g inference_TNT -p 'fusion.scan = "{scan}"'
+        command = f'''python multires.py -g inference_TNT -p 'get_data_loader.scan = "{scan}"' 'multires.output_folder = "{output_folder}/{scan}"'
+python fusion.py -g inference_TNT -p 'get_data_loader.scan = "{scan}"' 'fusion.output_folder = "{output_folder}/{scan}"'
 '''
         executor.name = f"{scan}_fusion"
         executor.submit(command)

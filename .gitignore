@@ -1,0 +1,7 @@
+datasets/DTU
+datasets/TanksAndTemples
+datasets/BlendedMVS
+pretrained
+__pycache__
+checkpoints
+runs

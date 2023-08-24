@@ -1,5 +1,8 @@
 import subprocess
+from pathlib import Path
+
 import gin
+
 
 @gin.configurable()
 class submitter():
@@ -30,7 +33,7 @@ class submitter():
 
     
     def submit(self, command):
-        subprocess.call(f"mkdir -p {self.log_dir}", shell=True)
+        Path(self.log_dir).mkdir(exist_ok=True)
         sh_file = open(f"{self.log_dir}/{self.name}.sh", "w")
         sh_file.write(f'''#!/bin/bash
 

@@ -1,7 +1,8 @@
-from submitter import submitter
-import gin
 import argparse
 import os
+
+import gin
+from submitter import submitter
 
 # DTU
 val_set = [3, 5, 17, 21, 28, 35, 37, 38, 40, 43, 56, 59, 66, 67, 82, 86, 106, 117]
@@ -12,7 +13,7 @@ training_set = ['Barn', 'Truck', 'Caterpillar', "Ignatius", 'Meetingroom', 'Chur
 intermediate_set = ['Family','Francis','Horse','Lighthouse','M60','Panther','Playground','Train']
 advanced_set = ["Auditorium", "Ballroom", "Courtroom", "Museum", "Palace", "Temple"]
 
-
+output_folder = "results"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -64,10 +65,11 @@ if __name__ == '__main__':
             for start, end in startend:
 
                 command = f'''python inference.py -g inference_TNT -p \\
-'inference.scan = "{scan}"' \\
-'inference.num_frame = {nf}' \\
+'get_data_loader.scan = "{scan}"' \\
+'get_data_loader.num_frame = {nf}' \\
+'get_data_loader.subset = ({start}, {end}, 1)' \\
 'inference.rescale = {scale}' \\
-'inference.subset = ({start}, {end}, 1)'
+'inference.output_folder = "{output_folder}/{scan}"'
 '''
                 executor.name = f"{scan}_{scale}_{nf}_{start}"
                 executor.submit(command)

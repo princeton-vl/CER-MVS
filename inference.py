@@ -3,43 +3,26 @@ import argparse
 import os
 import time
 import numpy as np
-import subprocess
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from pathlib import Path
 from core.raft import RAFT
-from datasets.dtu import DTU, DTUTest
-from datasets.blended import Blended
-from datasets.tnt import TNT
 from utils.frame_utils import write_pfm
 from utils.data_utils import scale_operation, crop_operation
-
-
-dataset_dict = {
-    "DTU": DTU,
-    "DTUTest": DTUTest,
-    "Blended": Blended,
-    "TNT": TNT
-}
+from datasets import get_test_data_loader
 
 
 @gin.configurable()
 def inference(
-        datasetname,
-        scan,
+        test_loader,
         ckpt,
         output_folder,
         rescale=1,
-        num_frame=10,
         crop=None,
-        subset=None,
         do_report=False,
     ):
 
-    if not subset is None:
-        start, end, step = subset
-        subset = list(range(start, end, step))
-    model = RAFT().cuda()
+    model = RAFT(test_mode=True).cuda()
 
     if ckpt is not None:
         tmp = torch.load(ckpt)
@@ -48,22 +31,11 @@ def inference(
         model.load_state_dict(tmp, strict=True)
     model.eval()
     
-    gpuargs = {'num_workers': 4, 'drop_last' : False, 'shuffle': False, 'pin_memory': True}
-
-    test_dataset = dataset_dict[datasetname](
-        scan=scan,
-        num_frames=num_frame,
-        subset=subset
-    )
-    test_loader = DataLoader(test_dataset, batch_size=1, **gpuargs)
-
-    subprocess.call("mkdir -p %s" % os.path.join(output_folder, scan, "depths"), shell=True)
+    output_folder = Path(output_folder)
+    (output_folder / "depths").mkdir(exist_ok=True)
 
     with torch.no_grad():
-        for i, data_blob in enumerate(test_loader):
-            print(i)
-            if not subset is None and not i in subset: continue
-            images, poses, intrinsics, indices, scale = data_blob
+        for images, poses, intrinsics, image_names, scale in test_loader:
             poses = poses.cuda()
             images = images.squeeze(0)
             intrinsics = intrinsics.squeeze(0)
@@ -75,12 +47,12 @@ def inference(
             intrinsics = intrinsics.unsqueeze(0).cuda()
             if do_report:
                 tic = time.time()
-            disp_est = model(images, poses, intrinsics, do_report=do_report)[-1] * scale.cuda()
+            disp_est = model(images, poses, intrinsics, do_report=do_report, scale=scale)
             if do_report:
                 print(f"per view time: {time.time() - tic}")
             res = disp_est.cpu().numpy()[0, 0]
             im = np.where(res == 0, 0, 1 / res).astype(np.float32)
-            write_pfm(os.path.join(f"{output_folder}/{scan}/depths/%08d_scale{rescale}_nf{num_frame}.pfm" % indices[0]), im)
+            write_pfm(output_folder / "depths" / f"{image_names[0]}_scale{rescale}_nf{test_loader.num_frames}.pfm", im)
             torch.cuda.empty_cache()
 
 
@@ -97,4 +69,5 @@ if __name__ == '__main__':
     gin.parse_config_files_and_bindings(
         gin_files, args.gin_param, skip_unknown=True)
 
-    inference()
+    test_loader = get_test_data_loader()
+    inference(test_loader)

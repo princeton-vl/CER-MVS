@@ -1,76 +1,38 @@
-import numpy as np
 import argparse
+import math
 import os
+
+import cv2
+import gin
+import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-import gin
-from utils.frame_utils import readPFM
-import cv2
 from plyfile import PlyData, PlyElement
-from PIL import Image
-import math
+from tqdm import tqdm
+
+from datasets import get_test_data_loader
 from utils.bilinear_sampler import bilinear_sampler
-from datasets.tnt import training_set as tnt_training_set
-from datasets.tnt import intermediate_set as tnt_intermediate_set
-from datasets.tnt import advanced_set as tnt_advanced_set
+from utils.frame_utils import read_gen
+
 cudnn.benchmark = True
 
 
 # Modified Pytorch Version of D2HC-RMVSNet [J. Yan et al., 2020]
 
 
-# read intrinsics and extrinsics
-def read_camera_parameters(filename,scale,index,flag):
-    with open(filename) as f:
-        lines = f.readlines()
-        lines = [line.rstrip() for line in lines]
-    # extrinsics: line [1,5), 4x4 matrix
-    extrinsics = np.fromstring(' '.join(lines[1:5]), dtype=np.float32, sep=' ').reshape((4, 4))
-    # intrinsics: line [7-10), 3x3 matrix
-    intrinsics = np.fromstring(' '.join(lines[7:10]), dtype=np.float32, sep=' ').reshape((3, 3))
-
+def modify_camera_parameters(intrinsics, extrinsics, scale, index, flag):
     intrinsics[:2, :] *= scale
-
     if (flag==0):
         intrinsics[0,2]-=index
     else:
-        intrinsics[1,2]-=index
-  
+        intrinsics[1,2]-=index  
     return intrinsics, extrinsics
-
-
-# read an image
-def read_img(filename):
-    img = Image.open(filename)
-    # scale 0~255 to 0~1
-    np_img = np.array(img, dtype=np.float32) / 255.
-    return np_img
-
-
-# read a binary mask
-def read_mask(filename):
-    return read_img(filename) > 0.5
-
 
 # save a binary mask
 def save_mask(filename, mask):
     assert mask.dtype == np.bool
     mask = mask.astype(np.uint8) * 255
-    Image.fromarray(mask).save(filename)
-
-
-# read a pair file, [(ref_view1, [src_view1-1, ...]), (ref_view2, [src_view2-1, ...]), ...]
-def read_pair_file(filename):
-    data = []
-    with open(filename) as f:
-        num_viewpoint = int(f.readline())
-        # 49 viewpoints
-        for view_idx in range(num_viewpoint):
-            ref_view = int(f.readline().rstrip())
-            src_views = [int(x) for x in f.readline().rstrip().split()[1::2]]
-            data.append((ref_view, src_views))
-    return data
-
+    cv2.imwrite(filename, mask)
 
 
 # project the reference point cloud into the source view, then project back
@@ -146,70 +108,38 @@ def check_geometric_consistency(depth_ref, intrinsics_ref, extrinsics_ref, depth
 
 @gin.configurable()
 def fusion(
-        dataset, scan,
+        data_loader,
         output_folder,
         suffix="",
         glb=0.25,
-        downsample=1,
-        rescale=1
+        rescale=1,
     ):
-
-    output_scan_folder = os.path.join(output_folder, scan)
-    # the pair file
-    if dataset == "DTU":
-        image_folder = os.path.join("datasets/DTU/Rectified", scan)
-        cams_folder = "datasets/DTU/Cameras"
-        pair_file = "datasets/DTU/Cameras/pair.txt"
-    elif dataset == "TNT":
-        if scan in tnt_training_set:
-            scan_folder = os.path.join("datasets/TanksAndTemples/training_input", scan)
-        elif scan in tnt_intermediate_set:
-            scan_folder = os.path.join("datasets/TanksAndTemples/tankandtemples/intermediate", scan)
-        elif scan in tnt_advanced_set:
-            scan_folder = os.path.join("datasets/TanksAndTemples/tankandtemples/advanced", scan)
-        image_folder = os.path.join(scan_folder, "images")
-        cams_folder = os.path.join(scan_folder, "cams")
-        pair_file = os.path.join(scan_folder, "pair.txt")
-
     
     # for the final point cloud
     vertexs = []
     vertex_colors = []
 
-    pair_data = read_pair_file(pair_file)[::downsample]
-    n_view = len(pair_data)
-
     # for each reference view and the corresponding source views
     ct2 = -1
-
 
     all_images = None
     all_depths = None
     all_intrinsics = None
     all_extrinsics = None
 
-    if dataset == "DTU":
-        n_images = 49
-    elif dataset == "TNT":
-        indices = [int(x[:-4]) for x in os.listdir(os.path.join(scan_folder, 'images'))]
-        n_images = np.max(indices) + 1
+    n_images = len(data_loader)
+    refid_to_index = {}
+    pair_data = []
 
-
-    for i in range(n_images):
-        print(f"loading {i}")
-        try:
-            if dataset == "DTU":
-                path = f'{image_folder}/rect_{i + 1:03d}_3_r5000.png'
-                ref_img = read_img(path)
-            elif dataset == "TNT":
-                ref_img = read_img(f'{image_folder}/{i:08d}.jpg')
-        except:
-            print("no image, skip")
-            continue
-        ref_depth_est = readPFM(os.path.join(output_scan_folder, f'depths/{i:08d}{suffix}.pfm'))
+    for i, (images, extrinsics, intrinsics, image_names, scale) in tqdm(enumerate(test_loader)):
+        refid = image_names[0]
+        refid_to_index[refid] = i
+        pair_data.append((image_names[0], image_names[1:]))
+        ref_img = images[0].permute(1, 2, 0).numpy() / 255.
+        ref_depth_est = read_gen(output_folder / "depths" / f"{refid}{suffix}.pfm")
         h, w = ref_depth_est.shape
         ref_depth_est = cv2.resize(ref_depth_est, (int(w * rescale), int(h * rescale)))
-        scale=float(ref_depth_est.shape[0])/ref_img.shape[0]
+        scale = float(ref_depth_est.shape[0]) / ref_img.shape[0]
 
         index=int((int(ref_img.shape[1]*scale)-ref_depth_est.shape[1])/2)
         flag=0
@@ -228,7 +158,7 @@ def fusion(
         else:
             ref_img=ref_img[index:ref_img.shape[0]-index,:,:]
 
-        ref_intrinsics, ref_extrinsics = read_camera_parameters(f'{cams_folder}/{i:08d}_cam.txt',scale,index,flag)
+        ref_intrinsics, ref_extrinsics = modify_camera_parameters(intrinsics, extrinsics, scale, index, flag)
 
         if i == 0:
             all_images = np.zeros((n_images, *ref_img.shape))
@@ -274,13 +204,15 @@ def fusion(
         print(f"{iter} {10 ** thre}")
 
 
-        depth_est = torch.zeros((n_view, h, w)).cuda()
+        depth_est = torch.zeros((n_images, h, w)).cuda()
         # thre = 1.75
         geo_mask_all = []
-        ref_id = 0
 
-        for ref_view, src_views in pair_data:
+        for refid, srcids in pair_data:
+            ref_view = refid_to_index[refid]
+            src_views = [refid_to_index[x] for x in srcids]
             print(f"ref view {ref_view}")
+            print(src_views)
             ct2 += 1
 
             # load the reference image
@@ -297,16 +229,15 @@ def fusion(
 
             n = 1 + len(src_views)
 
-            print(src_views)
             src_intrinsics, src_extrinsics = all_intrinsics[src_views], all_extrinsics[src_views]
             src_depth_est = all_depths[src_views]
             n_src = len(src_views)
             ref_depth_est = ref_depth_est.unsqueeze(0).repeat(n_src, 1, 1)
             ref_intrinsics = ref_intrinsics.unsqueeze(0).repeat(n_src, 1, 1)
             ref_extrinsics = ref_extrinsics.unsqueeze(0).repeat(n_src, 1, 1)
-            if n_src == 0:
-                ref_id += 1
-                continue
+
+            assert(n_src != 0)
+
             masks, geo_mask, depth_reprojected, x2d_src, y2d_src, relative_depth_diff = check_geometric_consistency(ref_depth_est, ref_intrinsics, # parallelize it!
                                                                                         ref_extrinsics,
                                                                                         src_depth_est,
@@ -323,7 +254,7 @@ def fusion(
 
             for i in range (2, n):
                 geo_mask=torch.logical_or(geo_mask,geo_mask_sums[i-2]>=i)
-            depth_est[ref_id] = (depth_reprojected.sum(dim=0) + ref_depth_est[0]) / (geo_mask_sum + 1)
+            depth_est[ref_view] = (depth_reprojected.sum(dim=0) + ref_depth_est[0]) / (geo_mask_sum + 1)
 
             del masks
 
@@ -335,24 +266,21 @@ def fusion(
                 ref_intrinsics = ref_intrinsics[0]
                 ref_extrinsics = ref_extrinsics[0]
                 
-                os.makedirs(os.path.join(output_scan_folder, "mask"), exist_ok=True)
+                os.makedirs(os.path.join(output_folder, "mask"), exist_ok=True)
 
-                depth_est_averaged = depth_est[ref_id].cpu().numpy()
+                depth_est_averaged = depth_est[ref_view].cpu().numpy()
                 geo_mask = geo_mask.cpu().numpy()
 
 
-                save_mask(os.path.join(output_scan_folder, f"mask/{ref_view:0>8}{suffix}.png"), geo_mask)
-                print(f"processing {scan}, ref-view{ref_view}, mask:{geo_mask.mean()}")
+                save_mask(output_folder / "mask" / f"{ref_view}{suffix}.png", geo_mask)
+                print(f"ref-view{ref_view}, mask:{geo_mask.mean()}")
                 valid_points = geo_mask
             
                 ref_img = ref_img.cpu().numpy()
 
-                
-
                 height, width = depth_est_averaged.shape[:2]
                 x, y = np.meshgrid(np.arange(0, width), np.arange(0, height))
                 
-                # print("valid_points", valid_points.mean())
                 x, y, depth = x[valid_points], y[valid_points], depth_est_averaged[valid_points]
                 color = ref_img[:, :, :][valid_points]  # hardcoded for DTU dataset
                 xyz_ref = np.matmul(np.linalg.inv(ref_intrinsics.cpu().numpy()),
@@ -361,7 +289,7 @@ def fusion(
                                     np.vstack((xyz_ref, np.ones_like(x))))[:3]
                 vertexs.append(xyz_world.transpose((1, 0)))
                 vertex_colors.append((color * 255).astype(np.uint8))
-            ref_id += 1
+
         if np.mean(geo_mask_all) >= glb:
             thre_left = thre
         else:
@@ -382,7 +310,7 @@ def fusion(
 
     el = PlyElement.describe(vertex_all, 'vertex')
 
-    plyfilename = os.path.join(output_folder, scan + '.ply')
+    plyfilename = os.path.join(output_folder, 'result.ply')
     PlyData([el]).write(plyfilename)
     print("saving the final model to", plyfilename)
 
@@ -405,5 +333,5 @@ if __name__ == '__main__':
     gin.parse_config_files_and_bindings(
         gin_files, args.gin_param, skip_unknown=True)
 
-
-    fusion()
+    test_loader = get_test_data_loader()
+    fusion(test_loader)

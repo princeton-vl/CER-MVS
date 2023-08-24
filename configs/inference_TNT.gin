@@ -1,18 +1,9 @@
-RAFT.test_mode = 1
+get_test_data_loader.datasetname = "TNT"
 
-output_folder = "results"
-
-inference.datasetname = "TNT"
-inference.scan = "Ignatius"
-inference.num_frame = 15
-inference.output_folder = %output_folder
 inference.ckpt = "pretrained/train_BlendedMVS.pth"
 
-multires.output_folder = %output_folder
 multires.suffix1 = "_nf15"
 multires.suffix2 = "_nf25"
 
-fusion.dataset = "TNT"
-fusion.output_folder = %output_folder
 fusion.rescale = 1
 fusion.suffix = "_nf15_nf25_th0.02"

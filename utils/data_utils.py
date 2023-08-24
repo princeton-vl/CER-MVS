@@ -43,11 +43,11 @@ def load_pair(file: str):
     for i in range(1, 1+2*n_cam, 2):
         pair = []
         score = []
-        img_id = lines[i].strip()
+        img_id = int(lines[i].strip())
         pair_str = lines[i+1].strip().split(' ')
         n_pair = int(pair_str[0])
         for j in range(1, 1+2*n_pair, 2):
-            pair.append(pair_str[j])
+            pair.append(int(pair_str[j]))
             score.append(float(pair_str[j+1]))
         img_ids.append(img_id)
         pairs[img_id] = {'id': img_id, 'index': i//2, 'pair': pair, 'score': score}
