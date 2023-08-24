@@ -67,17 +67,11 @@ def train(name='test',
 
             optimizer.zero_grad()
             images, depths, poses, intrinsics = data_blob
-            # print(images.shape)
             depths = depths.cuda()
             depths = depths[:, [0]]
             disp_gt = torch.where(depths>0, 1.0/depths, torch.zeros_like(depths))
 
-            print("!!!!!!!!!!")
-
             disp_est = model(images.cuda(), poses.cuda(), intrinsics.cuda())
-
-            print("??????")
-
 
             if not fix_gradual_weight is None:
                 gradual_weight = fix_gradual_weight
@@ -85,7 +79,6 @@ def train(name='test',
                 gradual_weight = total_steps * 1.0 / num_steps
 
             loss, metrics = sequence_loss(disp_est, disp_gt, gradual_weight=gradual_weight)
-            print(loss)
 
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)

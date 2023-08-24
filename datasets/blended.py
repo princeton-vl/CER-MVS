@@ -14,8 +14,6 @@ training_set = ['5a3f4aba5889373fbbc5d3b5', '5bfc9d5aec61ca1dd69132a2', '5b908d3
 
 subsets = ["dataset_full_res_0-29", "dataset_full_res_30-59", "dataset_full_res_60-89", "dataset_full_res_90-112"]
 
-training_set = ['5bfe5ae0fe0ea555e6a969ca'] # !
-subsets = ["dataset_full_res_0-29"] # !
 
 @gin.configurable()
 class Blended(Dataset):

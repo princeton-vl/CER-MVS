@@ -22,7 +22,6 @@ val_set = [3, 5, 17, 21, 28, 35, 37, 38, 40, 43, 56, 59, 66, 67, 82, 86, 106, 11
 test_set = [1, 4, 9, 10, 11, 12, 13, 15, 23, 24, 29, 32, 33, 34, 48, 49, 62, 75, 77, 110, 114, 118]
 
 
-
 @gin.configurable()
 class DTU(Dataset):
     def __init__(self, dataset_path="datasets/DTU", num_frames=10, light_number=-1,
@@ -42,7 +41,6 @@ class DTU(Dataset):
         if pairs_provided:
             self.pair_list = load_pair(self.dataset_path / "Cameras" / "pair.txt")
 
-
     def _theta_matrix(self, poses):
         delta_pose = np.matmul(poses[:,None], np.linalg.inv(poses[None,:]))
         dR = delta_pose[:, :, :3, :3]
@@ -51,7 +49,7 @@ class DTU(Dataset):
         return np.rad2deg(np.arccos(cos_theta))
 
     def _load_poses(self):
-        pose_glob = glob.glob(self.dataset_path / "Cameras" / "*_cam.txt")
+        pose_glob = glob.glob(str(self.dataset_path / "Cameras" / "*_cam.txt"))
         extrinsics_list, intrinsics_list = [], []
         for cam_file in sorted(pose_glob):
             extrinsics = np.loadtxt(cam_file, skiprows=1, max_rows=4, dtype=np.float)
@@ -95,8 +93,8 @@ class DTU(Dataset):
         self.scenes = {}
         for scene in [f"scan{i}" for i in training_set]:
             for k in range(7) if self.light_number == -1 else range(self.light_number, self.light_number + 1):
-                images = sorted(glob.glob(image_path / scene / "*_%d_*.png" % k))
-                depths = sorted(glob.glob(depth_path /  scene / "*.pfm"))
+                images = sorted(glob.glob(str(image_path / scene / ("*_%d_*.png" % k))))
+                depths = sorted(glob.glob(str(depth_path /  scene / "*.pfm")))
                 if self.scale_between_image_depth is None:
                     self.scale_between_image_depth = int(read_gen(images[0]).shape[0] / read_gen(depths[0]).shape[0])
                 scene_id = "%s_%d" % (scene, k)
@@ -108,7 +106,7 @@ class DTU(Dataset):
         return len(self.dataset_index)
 
     def __getitem__(self, index):
-        # print(index, "index")
+        print(index, "index !!!!!!!")
         scene_id, ref_id = self.dataset_index[index]
         image_list, depth_list = self.scenes[scene_id]
 
@@ -149,7 +147,6 @@ class DTU(Dataset):
         images = images.contiguous()
 
         images, depths, intrinsics = random_scale_and_crop(images, depths, intrinsics)
-
         return images, depths, poses, intrinsics
 
 
@@ -214,7 +211,7 @@ class DTUTest(Dataset):
             self.theta_list.append(list_i)
 
     def _build_dataset_index(self):
-        image_glob = glob.glob(self.dataset_path / "Rectified" / self.scan / "rect_*_3_r5000.png")
+        image_glob = glob.glob(str(self.dataset_path / "Rectified" / self.scan / "rect_*_3_r5000.png"))
         self.image_list = sorted(image_glob)
 
     def __len__(self):
