@@ -5,3 +5,4 @@ pretrained
 __pycache__
 checkpoints
 runs
+results

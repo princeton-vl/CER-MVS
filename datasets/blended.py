@@ -14,7 +14,6 @@ training_set = ['5a3f4aba5889373fbbc5d3b5', '5bfc9d5aec61ca1dd69132a2', '5b908d3
 
 subsets = ["dataset_full_res_0-29", "dataset_full_res_30-59", "dataset_full_res_60-89", "dataset_full_res_90-112"]
 
-
 @gin.configurable()
 class Blended(Dataset):
     def __init__(self, dataset_path="datasets/BlendedMVS", num_frames=8, scaling="median"):

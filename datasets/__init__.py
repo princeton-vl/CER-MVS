@@ -18,7 +18,7 @@ dataset_dict = {
 def get_test_data_loader(
     datasetname,
     scan=None,
-    num_frame=10,
+    num_frames=10,
     subset=None,
 ):
     if subset is not None:
@@ -27,7 +27,7 @@ def get_test_data_loader(
     
     dataset = dataset_dict[datasetname](
         scan=scan,
-        num_frames=num_frame,
+        num_frames=num_frames,
         subset=subset
     )
     gpuargs = {'num_workers': 4, 'drop_last' : False, 'shuffle': False, 'pin_memory': True}
@@ -38,9 +38,9 @@ def get_test_data_loader(
 def get_train_data_loader(
     datasetname,
     batch_size,
-    num_frame=10,
+    num_frames=10,
 ):
-    dataset = dataset_dict[datasetname](num_frames=num_frame)
+    dataset = dataset_dict[datasetname](num_frames=num_frames)
     gpuargs = {'num_workers': 4, 'drop_last' : True, 'shuffle': True, 'pin_memory': True}
     data_loader = DataLoader(dataset, batch_size=batch_size, **gpuargs)
     return data_loader

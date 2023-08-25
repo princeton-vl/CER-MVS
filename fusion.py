@@ -32,7 +32,7 @@ def modify_camera_parameters(intrinsics, extrinsics, scale, index, flag):
 def save_mask(filename, mask):
     assert mask.dtype == np.bool
     mask = mask.astype(np.uint8) * 255
-    cv2.imwrite(filename, mask)
+    cv2.imwrite(str(filename), mask)
 
 
 # project the reference point cloud into the source view, then project back
@@ -131,10 +131,13 @@ def fusion(
     refid_to_index = {}
     pair_data = []
 
-    for i, (images, extrinsics, intrinsics, image_names, scale) in tqdm(enumerate(test_loader)):
-        refid = image_names[0]
+    for i, (images, extrinsics, intrinsics, image_names, _) in tqdm(enumerate(data_loader)):
+        images = images.squeeze(0)
+        ref_extrinsics = extrinsics[0][0]
+        ref_intrinsics = intrinsics[0][0]
+        refid = image_names[0][0]
         refid_to_index[refid] = i
-        pair_data.append((image_names[0], image_names[1:]))
+        pair_data.append((image_names[0][0], [x[0] for x in image_names[1:]]))
         ref_img = images[0].permute(1, 2, 0).numpy() / 255.
         ref_depth_est = read_gen(output_folder / "depths" / f"{refid}{suffix}.pfm")
         h, w = ref_depth_est.shape
@@ -158,7 +161,7 @@ def fusion(
         else:
             ref_img=ref_img[index:ref_img.shape[0]-index,:,:]
 
-        ref_intrinsics, ref_extrinsics = modify_camera_parameters(intrinsics, extrinsics, scale, index, flag)
+        ref_intrinsics, ref_extrinsics = modify_camera_parameters(ref_intrinsics, ref_extrinsics, scale, index, flag)
 
         if i == 0:
             all_images = np.zeros((n_images, *ref_img.shape))

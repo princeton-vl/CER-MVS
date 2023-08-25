@@ -39,13 +39,14 @@ if __name__ == '__main__':
         # Multi Res Fusion
         multires(output_folder / scan, suffix1="_nf10", suffix2="_nf10", visualize=True)
         # Adaptive Threshold Fusion
+        data_loader = get_test_data_loader("DTUTest", scan=scan, num_frames=10)
         fusion(data_loader, output_folder / scan, rescale=2, suffix="_nf10_nf10_th0.02")
 
     # demo for TNT
     demo_scans = ["Ignatius", "Meetingroom"]
     for scan in demo_scans:
         # Low Res and High Res pass
-        for rescale, num_frame in [(1, 15), (2, 25)]:
+        for rescale, num_frames in [(1, 15), (2, 25)]:
             data_loader = get_test_data_loader("TNT", scan=scan, num_frames=num_frames)
             inference(
                 data_loader,
@@ -57,6 +58,8 @@ if __name__ == '__main__':
         # Multi Res Fusion
         multires(output_folder / scan, suffix1="_nf15", suffix2="_nf25", visualize=True)
         # Adaptive Threshold Fusion
+        data_loader = get_test_data_loader("TNT", scan=scan, num_frames=10)
         fusion(data_loader, output_folder / scan, rescale=1, suffix="_nf15_nf25_th0.02")
 
     # custom
+    # todo

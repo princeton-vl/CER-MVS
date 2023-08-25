@@ -99,14 +99,13 @@ class DTU(Dataset):
                     self.scale_between_image_depth = int(read_gen(images[0]).shape[0] / read_gen(depths[0]).shape[0])
                 scene_id = "%s_%d" % (scene, k)
                 self.scenes[scene_id] = (images, depths)
-                self.dataset_index += [(scene_id, i) for i in range(len(images))]
+                self.dataset_index += [(scene_id, i) for i in range(49)] # note 49 is hard coded
 
 
     def __len__(self):
         return len(self.dataset_index)
 
     def __getitem__(self, index):
-        print(index, "index !!!!!!!")
         scene_id, ref_id = self.dataset_index[index]
         image_list, depth_list = self.scenes[scene_id]
 
@@ -153,7 +152,7 @@ class DTU(Dataset):
 @gin.configurable()
 class DTUTest(Dataset):
     def __init__(self, dataset_path="datasets/DTU", scan=None, num_frames=None, subset=None, min_angle=4.0, max_angle=30.0, pairs_provided=True):
-        self.dataset_path = dataset_path
+        self.dataset_path = Path(dataset_path)
         self.scan = scan
         self.num_frames = num_frames
         self.min_angle = min_angle

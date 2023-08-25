@@ -33,7 +33,7 @@ class submitter():
 
     
     def submit(self, command):
-        Path(self.log_dir).mkdir(exist_ok=True)
+        Path(self.log_dir).mkdir(exist_ok=True, parents=True)
         sh_file = open(f"{self.log_dir}/{self.name}.sh", "w")
         sh_file.write(f'''#!/bin/bash
 

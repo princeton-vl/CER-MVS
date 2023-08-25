@@ -1,15 +1,18 @@
-import gin
 import argparse
 import os
 import time
+from pathlib import Path
+
+import gin
 import numpy as np
 import torch
 import torch.nn as nn
-from pathlib import Path
+from tqdm import tqdm
+
 from core.raft import RAFT
-from utils.frame_utils import write_pfm
-from utils.data_utils import scale_operation, crop_operation
 from datasets import get_test_data_loader
+from utils.data_utils import crop_operation, scale_operation
+from utils.frame_utils import write_pfm
 
 
 @gin.configurable()
@@ -32,10 +35,10 @@ def inference(
     model.eval()
     
     output_folder = Path(output_folder)
-    (output_folder / "depths").mkdir(exist_ok=True)
+    (output_folder / "depths").mkdir(exist_ok=True, parents=True)
 
     with torch.no_grad():
-        for images, poses, intrinsics, image_names, scale in test_loader:
+        for images, poses, intrinsics, image_names, scale in tqdm(test_loader):
             poses = poses.cuda()
             images = images.squeeze(0)
             intrinsics = intrinsics.squeeze(0)
@@ -52,7 +55,7 @@ def inference(
                 print(f"per view time: {time.time() - tic}")
             res = disp_est.cpu().numpy()[0, 0]
             im = np.where(res == 0, 0, 1 / res).astype(np.float32)
-            write_pfm(output_folder / "depths" / f"{image_names[0]}_scale{rescale}_nf{test_loader.num_frames}.pfm", im)
+            write_pfm(output_folder / "depths" / f"{image_names[0][0]}_scale{rescale}_nf{test_loader.dataset.num_frames}.pfm", im)
             torch.cuda.empty_cache()
 
 

@@ -16,7 +16,7 @@ from utils.frame_utils import readPFM, write_pfm
 def multires(output_folder, suffix1="", suffix2="", th=0.02, down_sample=1, visualize=False):
     output_folder = Path(output_folder)
     names = os.listdir(output_folder / "depths")
-    names = sorted([name[:8] for name in names if "_scale1" in name])
+    names = sorted([name.split("_scale1")[0] for name in names if "_scale1" in name])
     n = len(names)
 
     for i in tqdm(range(n)):
