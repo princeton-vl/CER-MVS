@@ -118,22 +118,22 @@ You can demo our trained model on `scan3` of `DTU` and `Ignatius`, `Meetingroom`
 python demo.py
 ```
 
-This will output point clouds `*.ply` in default `results` folder together with visualized depth maps `*.png` (modify `configs/demo.gin` to specify a different output folder).
+This will output point clouds `*.ply` in default `results` folder together with visualized depth maps `*.png` (modify `demo.py` to specify a different output folder).
 
 ```
 ├── results
     ├── scan3
         ├── depths
             ├── *.png
+        ├── result.ply
     ├── Ignatius
         ├── depths
             ├── *.png
+        ├── result.ply
     ├── Meetingroom
         ├── depths
             ├── *.png
-    ├── scan3.ply
-    ├── Ignatius.ply
-    ├── Meetingroom.ply
+        ├── result.ply
 
 ```
 

@@ -1,28 +1,18 @@
-import os
-import gin
 import argparse
 import os
 import time
+
+import gin
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler
+
 from core.raft import RAFT
-from datasets.dtu import DTU, DTUTest
-from datasets.blended import Blended
-from datasets.tnt import TNT
+from datasets import get_train_data_loader
 from loss import sequence_loss
 from utils.logger import Logger
-
-
-dataset_dict = {
-    "DTU": DTU,
-    "DTUTest": DTUTest,
-    "Blended": Blended,
-    "TNT": TNT
-}
 
 
 @gin.configurable('optimizer')
@@ -48,8 +38,6 @@ def train(name='test',
         overlap=False,
         batch_size=2,
         SAVE_FREQ=5000,
-        datasetname="Blended",
-        num_workers=4,
         fix_gradual_weight=None,
         num_steps=100000
     ):
@@ -59,9 +47,8 @@ def train(name='test',
     # print(count_parameters(model))
 
     optimizer, scheduler = fetch_optimizer(model, num_steps=num_steps)
-    train_dataset = dataset_dict[datasetname]()
-    gpuargs = {'num_workers': num_workers, 'drop_last' : True, 'shuffle': True, 'pin_memory': True}
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, **gpuargs)
+
+    train_loader = get_train_data_loader(batch_size=batch_size)
     total_steps = 0
     scaler = GradScaler(enabled=True)
     model = nn.DataParallel(model)
@@ -80,10 +67,10 @@ def train(name='test',
 
             optimizer.zero_grad()
             images, depths, poses, intrinsics = data_blob
-            # print(images.shape)
             depths = depths.cuda()
             depths = depths[:, [0]]
             disp_gt = torch.where(depths>0, 1.0/depths, torch.zeros_like(depths))
+
             disp_est = model(images.cuda(), poses.cuda(), intrinsics.cuda())
 
             if not fix_gradual_weight is None:

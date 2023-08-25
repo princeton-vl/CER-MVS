@@ -1,8 +1,11 @@
-import numpy as np
 import os
+
 import gin
+import numpy as np
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
+
 from utils.data_utils import load_pair, random_scale_and_crop
 from utils.frame_utils import read_gen
 
@@ -11,64 +14,51 @@ training_set = ['5a3f4aba5889373fbbc5d3b5', '5bfc9d5aec61ca1dd69132a2', '5b908d3
 
 subsets = ["dataset_full_res_0-29", "dataset_full_res_30-59", "dataset_full_res_60-89", "dataset_full_res_90-112"]
 
-
 @gin.configurable()
 class Blended(Dataset):
     def __init__(self, dataset_path="datasets/BlendedMVS", num_frames=8, scaling="median"):
         self.dataset_path = dataset_path
-        self.num_frames = num_frames + 1
+        self.num_frames = num_frames
         self.scene_list = training_set
-        self.pair_list = {}
-        for scene in self.scene_list:
+        self.scaling = scaling
+        self.dataset_index = []
+        for scene in tqdm(self.scene_list):
+            flag = 0
             for subset in subsets:
                 if scene in os.listdir(f"{dataset_path}/{subset}"):
-                    self.pair_list[scene] = load_pair(os.path.join(dataset_path, subset, scene, scene, scene, 'cams', 'pair.txt'))
-        self._build_dataset_index()
-        self.scaling=scaling
-        
-    def _build_dataset_index(self):
-        self.dataset_index = []
-        for scene in self.scene_list:
-            self.dataset_index += [(scene, i) for i in range(len(self.pair_list[scene]['id_list']))]
+                    flag = 1
+                    break
+            if flag == 0: continue
+            pair_list = load_pair(os.path.join(dataset_path, subset, scene, scene, scene, 'cams', 'pair.txt'))
+            for ref_id in pair_list['id_list']:
+                if len(pair_list[ref_id]['pair']) < self.num_frames: continue
+                self.dataset_index.append((scene, ref_id, pair_list[ref_id]['pair'][:self.num_frames]))
 
     def __len__(self):
         return len(self.dataset_index)
 
     def __getitem__(self, index):
-        # print(index, "index")
-        scene_id, ix1 = self.dataset_index[index]
+        scene, ref_id, neib_ids = self.dataset_index[index]
         for subset in subsets:
-            if scene_id in os.listdir(f"{self.dataset_path}/{subset}"):
+            if scene in os.listdir(f"{self.dataset_path}/{subset}"):
                 break
         
-        ref_id = self.pair_list[scene_id]['id_list'][ix1]
-        while len(self.pair_list[scene_id][ref_id]['pair']) < self.num_frames-1:
-            # skip to next if view not enough
-            index = (index + 1) % len(self.dataset_index)
-            scene_id, ix1 = self.dataset_index[index]
-            ref_id = self.pair_list[scene_id]['id_list'][ix1]
-            for subset in subsets:
-                if scene_id in os.listdir(f"{self.dataset_path}/{subset}"):
-                    break
-        
-        neighbors = [int(x) for x in self.pair_list[scene_id][ref_id]['pair'][:self.num_frames-1]]
-        indices = [ int(ref_id) ] + neighbors
+        indices = [ref_id] + neib_ids
         images, depths, poses, intrinsics = [], [], [], []
 
         for i in indices:
-            image_path = os.path.join(self.dataset_path, subset, scene_id, scene_id, scene_id, "blended_images", "%08d.jpg" % i)
-            depth_path = os.path.join(self.dataset_path, subset, scene_id, scene_id, scene_id, "rendered_depth_maps", "%08d.pfm" % i)
+            image_path = os.path.join(self.dataset_path, subset, scene, scene, scene, "blended_images", "%08d.jpg" % i)
+            depth_path = os.path.join(self.dataset_path, subset, scene, scene, scene, "rendered_depth_maps", "%08d.pfm" % i)
             try:
                 image = read_gen(image_path)
                 depth = read_gen(depth_path)
             except:
-                print("data incomplete", scene_id, ix1, image_path, depth_path)
+                print("data incomplete", scene, image_path, depth_path)
                 assert(0)
-            cams_path = os.path.join(self.dataset_path, subset, scene_id, scene_id, scene_id, "cams", "%08d_cam.txt" % i)
+            cams_path = os.path.join(self.dataset_path, subset, scene, scene, scene, "cams", "%08d_cam.txt" % i)
             pose = np.loadtxt(cams_path, skiprows=1, max_rows=4, dtype=np.float)
             calib = np.loadtxt(cams_path, skiprows=7, max_rows=3, dtype=np.float)
             
-
             images.append(image)
             depths.append(depth)
             poses.append(pose)
@@ -83,7 +73,7 @@ class Blended(Dataset):
             depth_f = depths.reshape((-1,))
             scale = 600 / np.median(depth_f[depth_f > 0])
         else:
-            cams_path0 = os.path.join(self.dataset_path, scene_id, scene_id, scene_id, "cams", "%08d_cam.txt" % indices[0])
+            cams_path0 = os.path.join(self.dataset_path, scene, scene, scene, "cams", "%08d_cam.txt" % indices[0])
             scale_info = np.loadtxt(cams_path0, skiprows=11, dtype=np.float)
             scale = 400 / scale_info[0]
 
