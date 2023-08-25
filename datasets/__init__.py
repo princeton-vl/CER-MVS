@@ -17,18 +17,18 @@ dataset_dict = {
 @gin.configurable()
 def get_test_data_loader(
     datasetname,
-    scan=None,
     num_frames=10,
     subset=None,
+    **args,
 ):
     if subset is not None:
         start, end, step = subset
         subset = list(range(start, end, step))
     
     dataset = dataset_dict[datasetname](
-        scan=scan,
         num_frames=num_frames,
-        subset=subset
+        subset=subset,
+        **args,
     )
     gpuargs = {'num_workers': 4, 'drop_last' : False, 'shuffle': False, 'pin_memory': True}
     data_loader = DataLoader(dataset, batch_size=1, **gpuargs)

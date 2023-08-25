@@ -23,6 +23,7 @@ def inference(
         rescale=1,
         crop=None,
         do_report=False,
+        write_min_depth=None,
     ):
 
     model = RAFT(test_mode=True).cuda()
@@ -56,6 +57,12 @@ def inference(
             res = disp_est.cpu().numpy()[0, 0]
             im = np.where(res == 0, 0, 1 / res).astype(np.float32)
             write_pfm(output_folder / "depths" / f"{image_names[0][0]}_scale{rescale}_nf{test_loader.dataset.num_frames}.pfm", im)
+            if write_min_depth is not None:
+                write_min_depth = Path(write_min_depth)
+                write_min_depth.mkdir(exist_ok=True)
+                with open(write_min_depth / f"{image_names[0][0]}.txt", "w") as f:
+                    min_depth = np.quantile(im[im > 0], 0.1) / 2
+                    f.write(f"{min_depth}\n")
             torch.cuda.empty_cache()
 
 
