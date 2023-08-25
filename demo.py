@@ -60,25 +60,3 @@ if __name__ == '__main__':
         # Adaptive Threshold Fusion
         data_loader = get_test_data_loader("TNT", scan=scan, num_frames=10)
         fusion(data_loader, output_folder / scan, rescale=1, suffix="_nf15_nf25_th0.02")
-
-    # custom
-    custom_dataset_path = "datasets/custom"
-    custom_output_folder = output_folder / "custom"
-    # use i = 0 pass to get min depth estimation
-    for i, (rescale, num_frames) in enumerate([(0.5, 10), (1, 15), (2, 25)]):
-        if i == 0: args = {}
-        else: args = {"min_dist_over_baseline": None}
-        data_loader = get_test_data_loader("Custom", dataset_path=custom_dataset_path, num_frames=num_frames)
-        inference(
-            data_loader,
-            ckpt="pretrained/train_BlendedMVS.pth",
-            output_folder=custom_output_folder,
-            rescale=rescale,
-            do_report=True,
-            write_min_depth=("datasets/custom/min_depth" if i == 0 else None),
-        )
-    # Multi Res Fusion
-    multires(custom_output_folder, suffix1="_nf15", suffix2="_nf25", visualize=True)
-    # Adaptive Threshold Fusion
-    data_loader = get_test_data_loader("Custom", dataset_path=custom_dataset_path, num_frames=10)
-    fusion(data_loader, custom_output_folder, rescale=1, suffix="_nf15_nf25_th0.02")
